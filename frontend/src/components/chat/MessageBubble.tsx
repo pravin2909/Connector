@@ -26,7 +26,7 @@ function Sources({ citations }: { citations: Citation[] }) {
       <div className="mb-1.5 text-xs font-medium text-muted">Sources</div>
       <div className="flex flex-col gap-1.5">
         {citations.map((c) => (
-          <details key={c.n} className="group rounded-lg bg-[#1d1d1d] px-2.5 py-1.5 text-[12.5px]">
+          <details key={c.n} className="group rounded-lg bg-bg2 px-2.5 py-1.5 text-[12.5px]">
             <summary className="flex cursor-pointer list-none items-baseline gap-2">
               <span className="font-mono text-accent">[{c.n}]</span>
               <span className="truncate text-ink">{c.document}</span>

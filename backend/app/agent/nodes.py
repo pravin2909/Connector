@@ -3,6 +3,7 @@
 understand -> plan -> agent -> policy -> (approval) -> execute -> observe -> agent ... -> finalize
 """
 
+import json
 import logging
 import re
 import uuid
@@ -17,7 +18,7 @@ from app.agent.events import Emitter
 from app.agent.policy import PolicyEngine
 from app.agent.prompts import FINALIZE_PROMPT, PLAN_SCHEMA, agent_system_prompt, plan_prompt
 from app.agent.state import AgentState, PendingCall
-from app.agent.tools import REQUEST_CAPABILITY, SEP, ToolRegistry, summarize_args
+from app.agent.tools import REQUEST_CAPABILITY, SEP, ToolOutput, ToolRegistry, summarize_args
 from app.config import Settings
 from app.db.models import AgentRun, Approval, Document, ToolCall
 from app.db.session import SessionLocal
@@ -27,6 +28,9 @@ log = logging.getLogger(__name__)
 
 MAX_CONSECUTIVE_ERRORS = 3
 MAX_REPLANS = 2
+# After this many redundant read-only lookups (same query or same results), stop the
+# loop and force a final answer — small models otherwise re-search indefinitely.
+MAX_REDUNDANT_LOOKUPS = 2
 
 # Friendly activity labels; anything else falls back to "Using <tool>".
 _LABELS = {
@@ -113,6 +117,12 @@ class AgentNodes:
             caps = [c for c in plan.get("capabilities", []) if c in available]
             if plan.get("needs_tools") and not caps:
                 caps = available
+            # Private-document search is read-only and cheap. Whenever documents are
+            # indexed and the run will use tools, keep `documents` reachable so the agent
+            # searches them instead of claiming "I don't have access" — the most common
+            # small-model failure on questions about the user's own files.
+            if plan.get("needs_tools") and state.get("documents") and "documents" in available and "documents" not in caps:
+                caps = [*caps, "documents"]
         except Exception as e:  # noqa: BLE001 - a bad plan must not kill the run
             log.warning("Planning failed, using all capabilities: %s", e)
             plan, caps = {"summary": state["goal"], "needs_tools": True, "steps": []}, available
@@ -144,7 +154,14 @@ class AgentNodes:
 
     async def agent(self, state: AgentState) -> dict[str, Any]:
         caps = state.get("capabilities", [])
-        tools = self.d.registry.schemas_for(caps) if caps else None
+        # The plan gates the action tools, but read-only lookup (document + web search)
+        # is always available so the agent can check instead of claiming "no access".
+        schemas = self.d.registry.schemas_for(caps)
+        seen = {s["function"]["name"] for s in schemas}
+        for s in self.d.registry.lookup_schemas():
+            if s["function"]["name"] not in seen:
+                schemas.append(s)
+        tools = schemas or None
         resp = await self.d.llm.chat(self._llm_messages(state), tools=tools)
         update: dict[str, Any] = {"messages": [resp.as_message()]}
         if resp.tool_calls:
@@ -221,6 +238,9 @@ class AgentNodes:
         messages, citations = [], list(state.get("citations", []))
         errors = state.get("consecutive_errors", 0)
         capabilities = list(state.get("capabilities", []))
+        seen_sigs = set(state.get("tool_sigs", []))
+        redundant = state.get("redundant_lookups", 0)
+        specs = self.d.registry.specs()
 
         for call in state.get("pending", []):
             name, args = call["name"], call["arguments"]
@@ -268,6 +288,20 @@ class AgentNodes:
                 url = self._save_screenshot(run_id, img, mime, f"{seq}-{i}")
                 self.d.emitter.event(run_id, "screenshot", url=url, tool=name)
 
+            # Loop guard: a read-only lookup that repeats an earlier query or returns the
+            # same passages means the model is spinning. Nudge it to answer, and count it
+            # so route_after_execute can force a final answer.
+            spec = specs.get(name)
+            if spec and spec.read_only and not out.is_error:
+                sig = _lookup_signature(name, args, out)
+                if sig in seen_sigs:
+                    redundant += 1
+                    out.text += (
+                        "\n\n[You already have this result from an earlier call. Do NOT search again — "
+                        "answer the user now using the information above, citing [n] where relevant.]"
+                    )
+                seen_sigs.add(sig)
+
             status = "failed" if out.is_error else "succeeded"
             await self._finish_call(db_id, status, out.text, out.latency_ms)
             await self.d.emitter.step(
@@ -283,6 +317,8 @@ class AgentNodes:
             "citations": citations,
             "capabilities": capabilities,
             "consecutive_errors": errors,
+            "tool_sigs": list(seen_sigs),
+            "redundant_lookups": redundant,
             "step_count": state.get("step_count", 0) + 1,
         }
 
@@ -321,6 +357,16 @@ class AgentNodes:
 
 def _tool_msg(call: PendingCall, content: str) -> dict[str, Any]:
     return {"role": "tool", "tool_call_id": call["call_id"], "content": content}
+
+
+def _lookup_signature(name: str, args: dict[str, Any], out: ToolOutput) -> str:
+    """Identity of a read-only lookup for loop detection. For document search, key on the
+    returned chunk ids so different query wordings that return the same passages count as
+    repeats; otherwise key on the arguments."""
+    if out.data and "chunks" in out.data:
+        ids = ",".join(sorted(c["chunk_id"] for c in out.data["chunks"]))
+        return f"{name}:chunks={ids}"
+    return f"{name}:{json.dumps(args, sort_keys=True, ensure_ascii=False)}"
 
 
 def _number_chunks(chunks: list[dict[str, Any]], citations: list[dict[str, Any]]):

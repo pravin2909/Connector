@@ -44,7 +44,7 @@ export function SidePanel({ title, latestRun }: { title: string; latestRun: Run 
               <img src={screenshot} alt="Agent's browser" className="size-full object-cover object-top" />
             </a>
           ) : (
-            <div className="flex size-full items-end p-3 text-xs text-[#1b1b1b]/70">No browser activity yet</div>
+            <div className="flex size-full items-end p-3 text-xs text-black/60">No browser activity yet</div>
           )}
         </div>
         <div className="mt-[9px] text-xs text-faint">Live view of the agent's current screen</div>

@@ -30,3 +30,5 @@ class AgentState(TypedDict, total=False):
     replans: int
     rejected: bool
     final_answer: str
+    tool_sigs: list[str]  # signatures of read-only lookups already run, for loop detection
+    redundant_lookups: int  # count of repeated lookups; forces finalize past a threshold

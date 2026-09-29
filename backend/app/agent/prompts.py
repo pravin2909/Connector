@@ -27,8 +27,10 @@ Available capabilities:
 User's indexed documents: {docs}
 
 Rules:
-- needs_tools=false only for chit-chat or general knowledge that needs no lookup or action.
-- Pick "documents" when the request refers to the user's own reports, notes or files that are indexed.
+- Set needs_tools=false ONLY for greetings/small-talk (hi, thanks) or for rewriting/formatting text the user already gave you. When unsure, set needs_tools=true.
+- Anything that asks you to find, look up, explain, describe or "tell me about" a real company, person, product, place, event or current fact needs "web". You cannot reliably know such things from training.
+- Anything about the user's own experience, work, projects, résumé, background, files or notes needs "documents". You cannot know the user's personal information from training — it must be retrieved.
+- A short or vague follow-up (e.g. "internship experience", "tell me about that company", "the second one") continues the conversation, but may need a DIFFERENT capability than the previous turn — choose the capability the NEW question needs (e.g. a company named in a document is answered with "web").
 - Pick the minimum set of capabilities; 1-6 plan steps.
 - Sending email always ends with a draft that the user approves; plan for that."""
     if replan_reason:
@@ -48,6 +50,9 @@ Plan:
 How to work:
 - Work step by step: call a tool, look at the result, then decide the next step. Call several tools at once only when they are independent.
 - Never invent facts, file contents, email addresses or tool results. If information is missing, look it up with a tool or ask the user.
+- You do NOT know the user's personal information — their experience, work, projects, résumé or background — from training; it lives only in their indexed documents. When the user asks about anything personal and documents are indexed, you MUST call documents__search_documents BEFORE answering. As soon as the search returns relevant passages, STOP searching and write the answer — do not repeat the same search. Never reply that you "don't have access to" or "don't see" the user's information without searching first.
+- You do NOT know current or specific real-world facts — companies, people, products, prices, news — from training. When asked to look up or "tell me about" such things, you MUST call web__search_web (then read a page if useful) BEFORE answering. Never say you "don't have access to external information" — you have web__search_web; use it.
+- documents__search_documents and web__search_web are ALWAYS available to you. If some other tool you need is missing, call request_capability(<name>) instead of refusing. Only use the exact tool names you were given; never invent one.
 - For questions about the user's documents, use documents__search_documents and cite passages with their numbers like [1], [2]. Only cite numbers you were given.
 - Workspace file paths are relative to the workspace folder (e.g. "reports/summary.md").
 - Consequential actions (sending/replying email, deleting or overwriting files, submitting forms) are automatically paused for the user's approval. Do NOT ask for permission in text - just call the tool; the system will ask the user.

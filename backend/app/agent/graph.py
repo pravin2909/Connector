@@ -8,7 +8,13 @@ observe: budget exhausted -> finalize | repeated errors -> plan (re-plan) | othe
 
 from langgraph.graph import END, START, StateGraph
 
-from app.agent.nodes import MAX_CONSECUTIVE_ERRORS, MAX_REPLANS, AgentDeps, AgentNodes
+from app.agent.nodes import (
+    MAX_CONSECUTIVE_ERRORS,
+    MAX_REDUNDANT_LOOKUPS,
+    MAX_REPLANS,
+    AgentDeps,
+    AgentNodes,
+)
 from app.agent.state import AgentState
 
 
@@ -49,6 +55,9 @@ def route_after_policy(state: AgentState) -> str:
 def route_after_execute(state: AgentState, max_steps: int) -> str:
     """The 'observe' decision: continue, re-plan, or wrap up."""
     if state.get("step_count", 0) >= max_steps:
+        return "finalize"
+    # The model is re-running the same lookups instead of answering — wrap up now.
+    if state.get("redundant_lookups", 0) >= MAX_REDUNDANT_LOOKUPS:
         return "finalize"
     if state.get("consecutive_errors", 0) >= MAX_CONSECUTIVE_ERRORS and state.get("replans", 0) < MAX_REPLANS:
         return "plan"

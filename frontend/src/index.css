@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-/* Design tokens from Connecter.html */
+/* Design tokens from Connecter.html. Dark is the default; the light palette is
+   applied by overriding these same variables under [data-theme="light"] below,
+   so every `bg-panel` / `text-muted` utility re-themes automatically. */
 @theme {
   --color-bg: #0b0b0c;
   --color-bg2: #111113;
@@ -8,6 +10,8 @@
   --color-panel: #242424;
   --color-panel2: #2d2d2d;
   --color-panel-strong: #2f2f2f;
+  --color-elevated: #1a1a1a;
+  --color-hover: #262626;
   --color-ink: #f4f1ea;
   --color-ink-dark: #17140f;
   --color-muted: #9a948c;
@@ -29,13 +33,39 @@
   }
 }
 
+/* Light theme — warm paper to mirror the warm dark palette. */
+:root[data-theme="light"] {
+  --color-bg: #faf8f3;
+  --color-bg2: #f1efe8;
+  --color-sidebar: #eceae2;
+  --color-panel: #eae7df;
+  --color-panel2: #e1ded4;
+  --color-panel-strong: #d8d4c9;
+  --color-elevated: #ffffff;
+  --color-hover: #e7e3d9;
+  --color-ink: #201d17;
+  --color-ink-dark: #faf8f3;
+  --color-muted: #6b655c;
+  --color-faint: #9c958a;
+  --color-accent: #b7761b;
+  --color-accent-dim: #ca9d55;
+  --color-approve: #2f6f52;
+  --color-danger: #bd5540;
+  --color-line: rgb(0 0 0 / 0.11);
+}
+
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
 @layer base {
   html { scroll-behavior: smooth; }
   html, body { min-height: 100%; background: var(--color-bg); color: var(--color-ink); }
   body { -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  /* Re-theme without a jarring flash when toggling dark/light. */
+  html, body { transition: background-color 0.25s ease, color 0.25s ease; }
   button { cursor: pointer; }
   ::selection { background: rgb(232 163 61 / 0.35); }
-  * { scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+  * { scrollbar-width: thin; scrollbar-color: var(--color-panel2) transparent; }
 }
 
 /* The gradient "screen" placeholder used in the design */
@@ -51,8 +81,8 @@
 .md ol { list-style: decimal; padding-left: 1.3em; }
 .md li + li { margin-top: 0.2em; }
 .md a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
-.md code { font-family: var(--font-mono); font-size: 0.86em; background: #1a1a1a; padding: 0.1em 0.35em; border-radius: 5px; }
-.md pre { background: #161616; border: 1px solid var(--color-line); border-radius: 10px; padding: 10px 12px; overflow-x: auto; }
+.md code { font-family: var(--font-mono); font-size: 0.86em; background: var(--color-elevated); padding: 0.1em 0.35em; border-radius: 5px; }
+.md pre { background: var(--color-elevated); border: 1px solid var(--color-line); border-radius: 10px; padding: 10px 12px; overflow-x: auto; }
 .md pre code { background: none; padding: 0; }
 .md table { border-collapse: collapse; font-size: 0.92em; display: block; overflow-x: auto; }
 .md th, .md td { border: 1px solid var(--color-line); padding: 4px 8px; text-align: left; }

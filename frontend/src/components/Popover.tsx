@@ -30,7 +30,7 @@ export function Popover({
       {trigger({ open, toggle: () => setOpen((o) => !o) })}
       {open && (
         <div
-          className={`absolute z-[80] w-[230px] rounded-[14px] border border-line bg-[#1a1a1a] p-2.5 shadow-[0_20px_60px_rgba(0,0,0,.5)] ${className}`}
+          className={`absolute z-[80] w-[230px] rounded-[14px] border border-line bg-elevated p-2.5 shadow-[0_20px_60px_rgba(0,0,0,.28)] ${className}`}
         >
           {children(() => setOpen(false))}
         </div>
@@ -43,7 +43,7 @@ export function PopoverItem({ children, onClick, danger }: { children: ReactNode
   return (
     <button
       onClick={onClick}
-      className={`block w-full rounded-lg px-2 py-2.5 text-left text-[13.5px] hover:bg-[#262626] ${danger ? 'text-danger' : 'text-[#ddd]'}`}
+      className={`block w-full rounded-lg px-2 py-2.5 text-left text-[13.5px] hover:bg-hover ${danger ? 'text-danger' : 'text-ink'}`}
     >
       {children}
     </button>

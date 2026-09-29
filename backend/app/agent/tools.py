@@ -156,6 +156,15 @@ class ToolRegistry:
         ready = set(self.mcp.tools())
         return [c for c in CAPABILITIES if c == "documents" or c in ready]
 
+    def lookup_schemas(self) -> list[dict[str, Any]]:
+        """Read-only 'look it up' tools that stay available on every turn regardless of
+        the plan, so the agent can verify facts instead of hallucinating a lack of access."""
+        names = [f"documents{SEP}search_documents"]
+        if "web" in self.mcp.tools():
+            names.append(f"web{SEP}search_web")
+        specs = self.specs()
+        return [specs[n].openai_schema() for n in names if n in specs]
+
     def schemas_for(self, capabilities: list[str]) -> list[dict[str, Any]]:
         caps = set(capabilities)
         out = [s.openai_schema() for s in self.specs().values() if s.capability in caps]

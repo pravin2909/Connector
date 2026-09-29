@@ -54,6 +54,9 @@ class FakeRegistry:
     def schemas_for(self, caps):
         return [s.openai_schema() for s in self._specs.values() if s.capability in caps]
 
+    def lookup_schemas(self):
+        return []
+
     async def call(self, name, args):
         self.calls.append((name, args))
         if name == "email__find_contact":

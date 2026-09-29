@@ -135,7 +135,7 @@ function ApprovalCard({ approval, conversationId }: { approval: Approval; conver
             {screenshot && <img src={screenshot} alt="Agent browser" className="size-full object-cover object-top" />}
           </div>
         ) : (
-          <pre className="mt-3 max-h-64 overflow-auto rounded-[10px] border border-line bg-[#1c1c1c] px-3.5 py-3 font-sans text-[13px] leading-relaxed whitespace-pre-wrap text-ink">
+          <pre className="mt-3 max-h-64 overflow-auto rounded-[10px] border border-line bg-bg2 px-3.5 py-3 font-sans text-[13px] leading-relaxed whitespace-pre-wrap text-ink">
             {approval.summary}
           </pre>
         )}
