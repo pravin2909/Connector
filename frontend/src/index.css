@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* Design tokens from Connecter.html */
+@theme {
+  --color-bg: #0b0b0c;
+  --color-bg2: #111113;
+  --color-sidebar: #151515;
+  --color-panel: #242424;
+  --color-panel2: #2d2d2d;
+  --color-panel-strong: #2f2f2f;
+  --color-ink: #f4f1ea;
+  --color-ink-dark: #17140f;
+  --color-muted: #9a948c;
+  --color-faint: #625d57;
+  --color-accent: #e8a33d;
+  --color-accent-dim: #8a6a34;
+  --color-approve: #3e8464;
+  --color-danger: #d46a5a;
+  --color-line: rgb(255 255 255 / 0.09);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --animate-blink: blink 1s infinite;
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.25; }
+    40% { opacity: 1; }
+  }
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  html, body { min-height: 100%; background: var(--color-bg); color: var(--color-ink); }
+  body { -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  button { cursor: pointer; }
+  ::selection { background: rgb(232 163 61 / 0.35); }
+  * { scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+}
+
+/* The gradient "screen" placeholder used in the design */
+.screen-gradient {
+  background: linear-gradient(120deg, #5c7a93 0%, #8c9b6e 45%, #d9cba3 70%, #3b6b5a 100%);
+}
+
+/* Markdown inside agent bubbles */
+.md > * + * { margin-top: 0.6em; }
+.md h1, .md h2, .md h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.25; }
+.md h1 { font-size: 1.2em; } .md h2 { font-size: 1.1em; } .md h3 { font-size: 1em; }
+.md ul { list-style: disc; padding-left: 1.3em; }
+.md ol { list-style: decimal; padding-left: 1.3em; }
+.md li + li { margin-top: 0.2em; }
+.md a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
+.md code { font-family: var(--font-mono); font-size: 0.86em; background: #1a1a1a; padding: 0.1em 0.35em; border-radius: 5px; }
+.md pre { background: #161616; border: 1px solid var(--color-line); border-radius: 10px; padding: 10px 12px; overflow-x: auto; }
+.md pre code { background: none; padding: 0; }
+.md table { border-collapse: collapse; font-size: 0.92em; display: block; overflow-x: auto; }
+.md th, .md td { border: 1px solid var(--color-line); padding: 4px 8px; text-align: left; }
+.md blockquote { border-left: 2px solid var(--color-accent-dim); padding-left: 10px; color: var(--color-muted); }
+.md strong { font-weight: 600; }
