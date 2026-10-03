@@ -3,13 +3,13 @@ import { useState } from 'react'
 import { api, type Conversation } from '../../lib/api'
 import { keys, useHealth } from '../../lib/hooks'
 import { useUI } from '../../store'
-import { EditIcon, ScreenIcon, SidebarIcon } from '../icons'
+import { EditIcon, ScreenIcon } from '../icons'
 
 const tbBtn =
   'flex size-[34px] items-center justify-center rounded-[9px] border border-line text-muted transition hover:border-faint hover:text-ink'
 
 export function Topbar({ conversation }: { conversation: Conversation | undefined }) {
-  const { panelOpen, setPanelOpen, sidebarExpanded, toggleSidebar } = useUI()
+  const { panelOpen, setPanelOpen } = useUI()
   const { data: health } = useHealth()
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -28,11 +28,6 @@ export function Topbar({ conversation }: { conversation: Conversation | undefine
   return (
     <div className="flex shrink-0 items-center justify-between border-b border-line px-[18px] py-3.5 md:px-[22px]">
       <div className="flex min-w-0 items-center gap-1.5">
-        {!sidebarExpanded && (
-          <button title="Expand sidebar" onClick={toggleSidebar} className={`${tbBtn} mr-1 border-transparent`}>
-            <SidebarIcon className="size-[17px]" />
-          </button>
-        )}
         {editing && conversation ? (
           <input
             autoFocus

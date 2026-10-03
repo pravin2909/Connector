@@ -21,7 +21,8 @@ CAPABILITIES: dict[str, str] = {
     "documents": "Search and read the user's private indexed documents (reports, notes, PDFs). "
     "Use when the question is about the user's own files/knowledge.",
     "file": "Read, create, write, copy, move, rename and delete files in the user's local workspace.",
-    "web": "Search the internet and read web pages for current or public information.",
+    "web": "Search the internet (text and images), open and read web pages, and download files "
+    "for current or public information.",
     "email": "Search, read, draft, send and reply to the user's email; find contacts.",
     "browser": "Operate a real web browser: navigate, read, click, type, scroll, download, "
     "or hand control to the user (e.g. to sign in).",
@@ -129,10 +130,11 @@ REQUEST_CAPABILITY = ToolSpec(
 
 
 class ToolRegistry:
-    def __init__(self, mcp: MCPManager, rag: RAGService, max_chars: int = 6000):
+    def __init__(self, mcp: MCPManager, rag: RAGService, max_chars: int = 6000, email_configured: bool = True):
         self.mcp = mcp
         self.rag = rag
         self.max_chars = max_chars
+        self.email_configured = email_configured
 
     # ---------------------------------------------------------------- discovery
     def specs(self) -> dict[str, ToolSpec]:
@@ -154,7 +156,12 @@ class ToolRegistry:
 
     def available_capabilities(self) -> list[str]:
         ready = set(self.mcp.tools())
-        return [c for c in CAPABILITIES if c == "documents" or c in ready]
+        caps = [c for c in CAPABILITIES if c == "documents" or c in ready]
+        # Don't offer email until it has credentials — otherwise the agent keeps
+        # proposing to "draft an email" and every call fails with "not configured".
+        if not self.email_configured:
+            caps = [c for c in caps if c != "email"]
+        return caps
 
     def lookup_schemas(self) -> list[dict[str, Any]]:
         """Read-only 'look it up' tools that stay available on every turn regardless of

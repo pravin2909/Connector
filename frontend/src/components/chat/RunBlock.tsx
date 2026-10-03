@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { api, type Approval, type Run, type Step } from '../../lib/api'
 import { keys } from '../../lib/hooks'
 import { useUI } from '../../store'
+import { ChevronIcon } from '../icons'
 
 /** Everything the agent did for one user message: activity checklist, approvals, status. */
 export function RunBlock({ run }: { run: Run }) {
@@ -62,18 +63,42 @@ function stepMeta(step: Step): string | null {
 
 export function Checklist({ steps, collapsible }: { steps: Step[]; collapsible: boolean }) {
   const [expanded, setExpanded] = useState(false)
-  const collapsed = collapsible && !expanded && steps.length > 6
-  const shown = collapsed ? [...steps.slice(0, 2), ...steps.slice(-3)] : steps
+
+  // A finished run collapses to a single compact summary bar that expands on click,
+  // so the thread stays tidy. A live run shows its steps streaming.
+  if (collapsible && !expanded) {
+    const status = steps.some((s) => s.status === 'error')
+      ? 'error'
+      : steps.some((s) => s.status === 'warning')
+        ? 'warning'
+        : 'done'
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="group flex items-center gap-2 self-stretch rounded-[12px] border border-line bg-panel px-3.5 py-2.5 text-[13px] text-muted transition hover:border-faint"
+      >
+        <StepIcon status={status} />
+        <span className="font-medium text-ink">Agent activity</span>
+        <span className="text-faint">· {steps.length} step{steps.length !== 1 ? 's' : ''}</span>
+        <ChevronIcon className="ml-auto size-4 text-faint transition group-hover:text-ink" />
+      </button>
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-[9px] self-stretch rounded-[15px] border border-line bg-panel px-[18px] py-4 text-sm">
-      {shown.map((s, i) => (
+    <div className="flex flex-col gap-2 self-stretch rounded-[12px] border border-line bg-panel px-3.5 py-3 text-[13px]">
+      {collapsible && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="group mb-0.5 flex items-center gap-2 text-left text-muted transition hover:text-ink"
+        >
+          <span className="font-medium text-ink">Agent activity</span>
+          <span className="text-faint">· {steps.length} steps</span>
+          <ChevronIcon className="ml-auto size-4 rotate-180 text-faint transition group-hover:text-ink" />
+        </button>
+      )}
+      {steps.map((s) => (
         <div key={s.seq}>
-          {collapsed && i === 2 && (
-            <button onClick={() => setExpanded(true)} className="mb-[9px] text-xs text-faint hover:text-muted">
-              ⋯ show {steps.length - 5} more steps
-            </button>
-          )}
           <div className="flex gap-2 text-muted">
             <StepIcon status={s.status} />
             <span className={`min-w-0 ${s.status === 'running' ? 'text-ink' : ''}`}>
@@ -82,7 +107,7 @@ export function Checklist({ steps, collapsible }: { steps: Step[]; collapsible: 
             </span>
           </div>
           {s.kind === 'plan' && Array.isArray(s.detail?.steps) && (s.detail.steps as string[]).length > 0 && (
-            <ol className="mt-1.5 ml-6 list-decimal space-y-0.5 text-[13px] text-faint">
+            <ol className="mt-1.5 ml-6 list-decimal space-y-0.5 text-[12.5px] text-faint">
               {(s.detail.steps as string[]).map((p, j) => <li key={j}>{p}</li>)}
             </ol>
           )}

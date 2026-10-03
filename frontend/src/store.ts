@@ -42,7 +42,9 @@ const wide = typeof window === 'undefined' || window.innerWidth > 900
 export const useUI = create<UIState>((set) => ({
   view: 'home',
   conversationId: null,
-  panelOpen: wide,
+  // The agent "screen" panel is closed by default (no second sidebar); it opens on demand
+  // via the topbar toggle, and auto-opens when the agent uses the browser (see setScreenshot).
+  panelOpen: false,
   sidebarExpanded: wide,
   theme: initialTheme(),
   screenshots: {},
@@ -63,5 +65,7 @@ export const useUI = create<UIState>((set) => ({
       applyTheme(theme)
       return { theme }
     }),
-  setScreenshot: (runId, url) => set((s) => ({ screenshots: { ...s.screenshots, [runId]: url } })),
+  // Auto-open the screen panel when the agent produces a browser screenshot.
+  setScreenshot: (runId, url) =>
+    set((s) => ({ screenshots: { ...s.screenshots, [runId]: url }, panelOpen: true })),
 }))
