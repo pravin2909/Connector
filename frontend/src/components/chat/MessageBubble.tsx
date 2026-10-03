@@ -13,7 +13,18 @@ export function MessageBubble({ message }: { message: Message }) {
   return (
     <div className="max-w-[82%] self-start rounded-[15px] rounded-bl-[4px] border border-line bg-panel px-[17px] py-[13px] text-[14.5px] leading-[1.6] max-md:max-w-full">
       <div className="md">
-        <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+        <Markdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // Open external links in a new tab so clicking one never navigates away from the app.
+            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noreferrer noopener" />,
+            img: ({ node, ...props }) => (
+              <img {...props} loading="lazy" className="my-2 max-h-56 rounded-lg border border-line object-cover" />
+            ),
+          }}
+        >
+          {message.content}
+        </Markdown>
       </div>
       {message.citations.length > 0 && <Sources citations={message.citations} />}
     </div>

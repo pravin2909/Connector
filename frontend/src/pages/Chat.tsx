@@ -72,7 +72,7 @@ export default function Chat() {
           <Topbar conversation={detail?.conversation} />
           <Thread detail={detail} notices={notices} error={sendError} onSuggestion={(s) => send.mutate(s)} />
           <Dock
-            placeholder={`Message ${title}…`}
+            placeholder="Message Connecter…"
             busy={busy}
             disabled={send.isPending}
             onSend={(t) => send.mutate(t)}

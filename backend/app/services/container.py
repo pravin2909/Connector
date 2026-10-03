@@ -26,7 +26,12 @@ class Container:
         self.llm = OpenAICompatibleProvider(settings)
         self.mcp = MCPManager(default_servers(settings))
         self.rag = RAGService(settings)
-        self.registry = ToolRegistry(self.mcp, self.rag, settings.tool_result_max_chars)
+        self.registry = ToolRegistry(
+            self.mcp,
+            self.rag,
+            settings.tool_result_max_chars,
+            email_configured=bool(settings.email_address and settings.email_password),
+        )
         self.policy = PolicyEngine(self.registry)
         self.bus = EventBus()
         self.emitter = Emitter(self.bus)
@@ -44,8 +49,33 @@ class Container:
         durable = s.checkpointer == "postgres"
         if durable:
             from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+            from psycopg.rows import dict_row
+            from psycopg_pool import AsyncConnectionPool
 
-            checkpointer = await self._stack.enter_async_context(AsyncPostgresSaver.from_conn_string(s.checkpointer_dsn))
+            # A pooled connection (instead of a single one) so the checkpointer survives
+            # Postgres restarts and stale/idle drops — otherwise one dropped connection
+            # fails every agent run until the backend is restarted.
+            pool = AsyncConnectionPool(
+                conninfo=s.checkpointer_dsn,
+                max_size=10,
+                open=False,
+                # Validate (and transparently replace) a connection before handing it out,
+                # so a dead connection after a Postgres restart never reaches a run.
+                check=AsyncConnectionPool.check_connection,
+                kwargs={"autocommit": True, "prepare_threshold": 0, "row_factory": dict_row},
+            )
+            # Retry on startup in case Postgres is still coming up.
+            for attempt in range(10):
+                try:
+                    await pool.open(wait=True, timeout=5)
+                    break
+                except Exception as e:
+                    if attempt == 9:
+                        raise
+                    log.warning("Postgres not ready (%s); retrying…", e)
+                    await asyncio.sleep(2)
+            self._stack.push_async_callback(pool.close)
+            checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()
         else:
             checkpointer = InMemorySaver()
